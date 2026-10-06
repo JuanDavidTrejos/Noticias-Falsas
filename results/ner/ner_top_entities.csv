@@ -1,0 +1,81 @@
+label,clase,tipo,entidad,frecuencia
+0,Falsas,LOC,Ceuta,619
+0,Falsas,LOC,Gobierno,506
+0,Falsas,LOC,Marruecos,236
+0,Falsas,LOC,Madrid,216
+0,Falsas,LOC,Coalición Canaria,205
+0,Falsas,LOC,España,190
+0,Falsas,LOC,Nueva Canarias,184
+0,Falsas,LOC,Qué,126
+0,Falsas,LOC,Melilla,96
+0,Falsas,LOC,Comunidad de Madrid,92
+0,Falsas,MISC,Ejecutivo,105
+0,Falsas,MISC,Cs,63
+0,Falsas,MISC,Iniciativa vers per Catalunya,63
+0,Falsas,MISC,Newtral.es,54
+0,Falsas,MISC,Catalunya,44
+0,Falsas,MISC,X,42
+0,Falsas,MISC,qué,40
+0,Falsas,MISC,El presidente del Gobierno,39
+0,Falsas,MISC,JxCat,38
+0,Falsas,MISC,Lectura recomendada,36
+0,Falsas,ORG,Iniciativa vers per Catalunya,411
+0,Falsas,ORG,PP,310
+0,Falsas,ORG,BNG,279
+0,Falsas,ORG,Congreso,226
+0,Falsas,ORG,EQUO,217
+0,Falsas,ORG,EAJ-PNV,214
+0,Falsas,ORG,Newtral.es,160
+0,Falsas,ORG,PSOE,123
+0,Falsas,ORG,Publicidad,123
+0,Falsas,ORG,UE,86
+0,Falsas,PER,Cristina Narbona,245
+0,Falsas,PER,España,191
+0,Falsas,PER,Mónica García,119
+0,Falsas,PER,Rita Maestre,94
+0,Falsas,PER,Según,92
+0,Falsas,PER,Boluarte,73
+0,Falsas,PER,Pablo Echenique,72
+0,Falsas,PER,También,72
+0,Falsas,PER,Además,66
+0,Falsas,PER,Andalucía,58
+1,Verdaderas,LOC,Gobierno,343
+1,Verdaderas,LOC,EE.UU.,245
+1,Verdaderas,LOC,Venezuela,245
+1,Verdaderas,LOC,Colombia,160
+1,Verdaderas,LOC,Estados Unidos,151
+1,Verdaderas,LOC,Madrid,149
+1,Verdaderas,LOC,Estado,136
+1,Verdaderas,LOC,Reino Unido,96
+1,Verdaderas,LOC,Cuba,92
+1,Verdaderas,LOC,Argentina,88
+1,Verdaderas,MISC,Fuente de la imagen,159
+1,Verdaderas,MISC,X,100
+1,Verdaderas,MISC,Facebook,83
+1,Verdaderas,MISC,TikTok,82
+1,Verdaderas,MISC,YouTube,80
+1,Verdaderas,MISC,Ejecutivo,77
+1,Verdaderas,MISC,Elige BBC News Mundo,67
+1,Verdaderas,MISC,Casado,50
+1,Verdaderas,MISC,AFP via Getty Images,49
+1,Verdaderas,MISC,Cs,47
+1,Verdaderas,ORG,PP,590
+1,Verdaderas,ORG,PSOE,330
+1,Verdaderas,ORG,Vox,219
+1,Verdaderas,ORG,Congreso,172
+1,Verdaderas,ORG,BBC Mundo,143
+1,Verdaderas,ORG,BBC World Service,130
+1,Verdaderas,ORG,Ciudadanos,105
+1,Verdaderas,ORG,ERC,101
+1,Verdaderas,ORG,Instagram,80
+1,Verdaderas,ORG,Unidas Podemos,77
+1,Verdaderas,PER,También,95
+1,Verdaderas,PER,Trump,95
+1,Verdaderas,PER,España,88
+1,Verdaderas,PER,Según,87
+1,Verdaderas,PER,De la Espriella,77
+1,Verdaderas,PER,Pedro Sánchez,74
+1,Verdaderas,PER,Iglesias,65
+1,Verdaderas,PER,América Latina,49
+1,Verdaderas,PER,Así,49
+1,Verdaderas,PER,Franco,49

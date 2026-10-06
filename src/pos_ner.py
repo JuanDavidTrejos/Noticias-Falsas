@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
-from typing import Iterable
-
 import pandas as pd
 
 REQUIRED_POS = ("NOUN", "VERB", "ADJ", "ADV", "PRON")
@@ -187,3 +185,237 @@ def save_pos_results(
     figure = plot_pos_distribution(pos_counts)
     figure.savefig(paths["figure"], dpi=160, bbox_inches="tight")
     return paths
+
+
+# ---------------------------------------------------------------------------
+# NER
+
+NER_COLUMNS = ("doc_id", "label", "clase", "entidad", "tipo")
+CLASS_NAMES = {0: "Falsas", 1: "Verdaderas"}
+
+
+def extract_entities(
+    dataframe: pd.DataFrame,
+    nlp,
+    text_column: str = "text",
+    label_column: str = "label",
+    batch_size: int = 64,
+) -> pd.DataFrame:
+    """Extrae las entidades de cada documento en formato tabular.
+
+    La tabla conserva la trazabilidad con ``doc_id`` y la clase original.
+    Cada fila representa una mención de entidad; las repeticiones dentro de
+    un documento no se eliminan porque son útiles para medir frecuencia.
+    """
+    required = {text_column, label_column, "doc_id"}
+    missing = required - set(dataframe.columns)
+    if missing:
+        raise KeyError(f"Faltan columnas para NER: {sorted(missing)}")
+
+    texts = dataframe[text_column].fillna("").astype(str).tolist()
+    rows = []
+    for record, doc in zip(dataframe.itertuples(index=False), nlp.pipe(
+        texts, batch_size=batch_size
+    )):
+        values = record._asdict()
+        label = int(values[label_column])
+        for entity in doc.ents:
+            text = entity.text.strip()
+            entity_type = entity.label_
+            if text and entity_type:
+                rows.append(
+                    {
+                        "doc_id": values["doc_id"],
+                        "label": label,
+                        "clase": CLASS_NAMES.get(label, str(label)),
+                        "entidad": text,
+                        "tipo": entity_type,
+                    }
+                )
+    return pd.DataFrame(rows, columns=NER_COLUMNS)
+
+
+def summarize_entities(
+    entities: pd.DataFrame,
+    top_n: int = 10,
+) -> dict[str, pd.DataFrame]:
+    """Genera los resúmenes de menciones y entidades únicas por clase/tipo.
+
+    Devuelve ``by_type`` (menciones y documentos), ``top_entities`` (las
+    entidades más repetidas por clase y tipo) y ``by_class`` (totales por
+    clase). El resultado mantiene tablas incluso cuando no hay entidades.
+    """
+    required = set(NER_COLUMNS)
+    missing = required - set(entities.columns)
+    if missing:
+        raise KeyError(f"Faltan columnas para resumir NER: {sorted(missing)}")
+
+    if entities.empty:
+        by_type = pd.DataFrame(
+            columns=["label", "clase", "tipo", "menciones", "documentos"]
+        )
+        top_entities = pd.DataFrame(
+            columns=["label", "clase", "tipo", "entidad", "frecuencia"]
+        )
+        by_class = pd.DataFrame(columns=["label", "clase", "menciones", "entidades_unicas", "documentos"])
+        return {"by_type": by_type, "top_entities": top_entities, "by_class": by_class}
+
+    by_type = (
+        entities.groupby(["label", "clase", "tipo"], as_index=False)
+        .agg(
+            menciones=("entidad", "size"),
+            documentos=("doc_id", "nunique"),
+        )
+        .sort_values(["label", "menciones", "tipo"], ascending=[True, False, True])
+        .reset_index(drop=True)
+    )
+    top_entities = (
+        entities.groupby(["label", "clase", "tipo", "entidad"], as_index=False)
+        .agg(frecuencia=("entidad", "size"))
+        .sort_values(
+            ["label", "tipo", "frecuencia", "entidad"],
+            ascending=[True, True, False, True],
+        )
+        .groupby(["label", "clase", "tipo"], group_keys=False)
+        .head(top_n)
+        .reset_index(drop=True)
+    )
+    by_class = (
+        entities.groupby(["label", "clase"], as_index=False)
+        .agg(
+            menciones=("entidad", "size"),
+            entidades_unicas=("entidad", "nunique"),
+            documentos=("doc_id", "nunique"),
+        )
+        .sort_values("label")
+        .reset_index(drop=True)
+    )
+    return {
+        "by_type": by_type,
+        "top_entities": top_entities,
+        "by_class": by_class,
+    }
+
+
+def plot_ner_distribution(entities: pd.DataFrame):
+    """Crea un gráfico comparativo porcentual por tipo y clase."""
+    import matplotlib.pyplot as plt
+
+    summary = entity_type_distribution(entities)
+    figure, axis = plt.subplots(figsize=(11, 5))
+    if summary.empty:
+        axis.text(0.5, 0.5, "No se encontraron entidades", ha="center", va="center")
+        axis.set_axis_off()
+    else:
+        plot_data = summary.pivot_table(
+            index="tipo", columns="clase", values="porcentaje", fill_value=0
+        )
+        plot_data.plot(kind="bar", ax=axis)
+        axis.set_title("Entidades nombradas por tipo y clase")
+        axis.set_xlabel("Tipo de entidad")
+        axis.set_ylabel("Porcentaje de menciones (%)")
+        axis.legend(title="Clase")
+        axis.tick_params(axis="x", rotation=0)
+    figure.tight_layout()
+    return figure
+
+
+def entity_type_distribution(entities: pd.DataFrame) -> pd.DataFrame:
+    """Calcula menciones y porcentajes de cada tipo dentro de cada clase."""
+    summary = summarize_entities(entities)["by_type"].copy()
+    if summary.empty:
+        return summary.assign(porcentaje=pd.Series(dtype=float))
+    totals = summary.groupby("label")["menciones"].transform("sum")
+    summary["porcentaje"] = summary["menciones"] / totals * 100
+    return summary
+
+
+def top_global_entities(
+    entities: pd.DataFrame,
+    label: int,
+    n: int = 20,
+) -> pd.DataFrame:
+    """Devuelve las entidades más frecuentes de una clase, sin separar por tipo."""
+    required = set(NER_COLUMNS)
+    missing = required - set(entities.columns)
+    if missing:
+        raise KeyError(f"Faltan columnas para resumir NER: {sorted(missing)}")
+    return (
+        entities[entities["label"] == label]
+        .groupby(["label", "clase", "entidad"], as_index=False)
+        .agg(frecuencia=("entidad", "size"))
+        .sort_values(["frecuencia", "entidad"], ascending=[False, True])
+        .head(n)
+        .reset_index(drop=True)
+    )
+
+
+def plot_top_entities(entities: pd.DataFrame, label: int, n: int = 20):
+    """Crea un gráfico horizontal con las entidades más frecuentes de una clase."""
+    import matplotlib.pyplot as plt
+
+    data = top_global_entities(entities, label=label, n=n).sort_values("frecuencia")
+    figure, axis = plt.subplots(figsize=(10, 7))
+    if data.empty:
+        axis.text(0.5, 0.5, "No se encontraron entidades", ha="center", va="center")
+        axis.set_axis_off()
+    else:
+        axis.barh(data["entidad"], data["frecuencia"])
+        axis.set_title(f"20 entidades más frecuentes: {CLASS_NAMES[label]}")
+        axis.set_xlabel("Menciones")
+        axis.set_ylabel("Entidad")
+    figure.tight_layout()
+    return figure
+
+
+def save_ner_results(
+    entities: pd.DataFrame,
+    output_dir: Path,
+    top_n: int = 10,
+) -> dict[str, Path]:
+    """Guarda la extracción, resúmenes y gráfico de NER en ``output_dir``."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    summaries = summarize_entities(entities, top_n=top_n)
+    paths = {
+        "entities": output_dir / "ner_entities.csv",
+        "summary": output_dir / "ner_summary.csv",
+        "by_type": output_dir / "ner_by_type.csv",
+        "top_entities": output_dir / "ner_top_entities.csv",
+        "by_class": output_dir / "ner_by_class.csv",
+        "type_distribution": output_dir / "ner_type_distribution.csv",
+        "top_global_true": output_dir / "ner_top_global_verdaderas.csv",
+        "top_global_false": output_dir / "ner_top_global_falsas.csv",
+        "figure": output_dir / "ner_distribution.png",
+        "figure_true": output_dir / "ner_top_verdaderas.png",
+        "figure_false": output_dir / "ner_top_falsas.png",
+    }
+    entities.to_csv(paths["entities"], index=False, encoding="utf-8")
+    summaries["by_type"].to_csv(paths["summary"], index=False, encoding="utf-8")
+    for key in ("by_type", "top_entities", "by_class"):
+        summaries[key].to_csv(paths[key], index=False, encoding="utf-8")
+    entity_type_distribution(entities).to_csv(
+        paths["type_distribution"], index=False, encoding="utf-8"
+    )
+    top_global_entities(entities, label=1).to_csv(
+        paths["top_global_true"], index=False, encoding="utf-8"
+    )
+    top_global_entities(entities, label=0).to_csv(
+        paths["top_global_false"], index=False, encoding="utf-8"
+    )
+    figure = plot_ner_distribution(entities)
+    figure.savefig(paths["figure"], dpi=160, bbox_inches="tight")
+    plot_top_entities(entities, label=1).savefig(
+        paths["figure_true"], dpi=160, bbox_inches="tight"
+    )
+    plot_top_entities(entities, label=0).savefig(
+        paths["figure_false"], dpi=160, bbox_inches="tight"
+    )
+    return paths
+
+
+# Alias explícito para notebooks y código que prefiera el nombre del análisis.
+analyze_ner = extract_entities
+extract_ner = extract_entities
+summarize_ner = summarize_entities
+ner_summary = summarize_entities

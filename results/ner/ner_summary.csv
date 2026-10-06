@@ -1,0 +1,9 @@
+label,clase,tipo,menciones,documentos
+0,Falsas,LOC,7643,2084
+0,Falsas,PER,6091,2242
+0,Falsas,MISC,5690,2041
+0,Falsas,ORG,4783,1867
+1,Verdaderas,LOC,8765,2072
+1,Verdaderas,MISC,6651,2015
+1,Verdaderas,PER,6617,1878
+1,Verdaderas,ORG,4408,1733
