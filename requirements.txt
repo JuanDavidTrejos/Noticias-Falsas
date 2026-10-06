@@ -2,3 +2,5 @@ beautifulsoup4>=4.12
 requests>=2.31
 pandas>=2.0
 kagglehub>=0.3
+spacy>=3.7
+matplotlib>=3.8

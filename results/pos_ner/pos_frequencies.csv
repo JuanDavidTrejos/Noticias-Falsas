@@ -1,0 +1,11 @@
+POS,categoria,label,noticia,frecuencia_absoluta,frecuencia_relativa
+NOUN,Sustantivos,1,Verdaderas,63003,20.512461540965994
+NOUN,Sustantivos,0,Falsas,51182,20.348753995642564
+VERB,Verbos,1,Verdaderas,31572,10.279184098715591
+VERB,Verbos,0,Falsas,24617,9.787137609134716
+ADJ,Adjetivos,1,Verdaderas,20893,6.802324634944408
+ADJ,Adjetivos,0,Falsas,16293,6.47771186844993
+ADV,Adverbios,1,Verdaderas,9896,3.2219310097836527
+ADV,Adverbios,0,Falsas,6589,2.6196307310634372
+PRON,Pronombres,1,Verdaderas,14407,4.690618437545785
+PRON,Pronombres,0,Falsas,9499,3.776577980630079
