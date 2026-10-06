@@ -61,7 +61,6 @@ def analyze_pos(
 
     counts = {label: Counter() for label in (0, 1)}
     token_counts = {(label, pos): Counter() for label in (0, 1) for pos in REQUIRED_POS}
-    total_tokens = Counter()
     texts = dataframe[text_column].fillna("").astype(str).tolist()
     labels = dataframe[label_column].astype(int).tolist()
 
@@ -69,7 +68,6 @@ def analyze_pos(
         for token in doc:
             if token.is_space or token.is_punct:
                 continue
-            total_tokens[label] += 1
             if token.pos_ in REQUIRED_POS:
                 counts[label][token.pos_] += 1
                 token_counts[(label, token.pos_)][token.lemma_.lower()] += 1
@@ -78,6 +76,7 @@ def analyze_pos(
     for pos in REQUIRED_POS:
         for label in (1, 0):
             absolute = counts[label][pos]
+            analyzed_tokens = sum(counts[label].values())
             rows.append(
                 {
                     "POS": pos,
@@ -86,8 +85,8 @@ def analyze_pos(
                     "noticia": "Verdaderas" if label == 1 else "Falsas",
                     "frecuencia_absoluta": absolute,
                     "frecuencia_relativa": (
-                        absolute / total_tokens[label] * 100
-                        if total_tokens[label]
+                        absolute / analyzed_tokens * 100
+                        if analyzed_tokens
                         else 0.0
                     ),
                 }
