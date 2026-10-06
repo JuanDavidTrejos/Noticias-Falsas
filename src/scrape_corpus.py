@@ -264,12 +264,19 @@ def write_corpus(articles: list[Article], output_dir: Path = DEFAULT_OUTPUT_DIR)
                 "date": article.date,
                 "n_words": len(article.text.split()),
                 "topic": article.topic,
+                "file": f"{'Falso' if article.label == 0 else 'Verdad'}/{doc_id}.txt",
             }
         )
-    with metadata_path.open("w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=rows[0].keys())
-        writer.writeheader()
-        writer.writerows(rows)
+    metadata = pd.DataFrame(rows)
+    # Conserva los documentos del dataset y actualiza únicamente los scr_*.
+    if metadata_path.exists():
+        previous = pd.read_csv(metadata_path)
+        previous = previous[
+            ~previous["doc_id"].astype(str).str.startswith("scr_")
+        ]
+        metadata = pd.concat([previous, metadata], ignore_index=True, sort=False)
+        metadata = metadata.sort_values("doc_id").reset_index(drop=True)
+    metadata.to_csv(metadata_path, index=False, encoding="utf-8")
 
 
 def main(
