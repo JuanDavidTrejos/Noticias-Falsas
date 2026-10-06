@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Entornos virtuales y herramientas de empaquetado
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Configuración local de editores
+.vscode/
+.idea/
+
+# Variables de entorno y archivos locales
+.env
+.env.*
+!.env.example
+
+# Datos de entrada locales y artefactos temporales
+data/
+tmp/
+temp/
+*.tmp
+*.log
+
+# Salidas locales de notebooks; conservar resultados versionables en results/
+results/.cache/
