@@ -25,6 +25,13 @@ REDUCTIONS = {
     "Stopwords + stemming": (True, True),
 }
 
+REDUCTION_FLAGS = {
+    "Ninguna": ("FALSE", "FALSE"),
+    "Solo stopwords": ("TRUE", "FALSE"),
+    "Solo stemming": ("FALSE", "TRUE"),
+    "Stopwords + stemming": ("TRUE", "TRUE"),
+}
+
 ALGORITHMS = {
     "Regresión logística": LogisticRegression(
         max_iter=1000, random_state=42
@@ -156,6 +163,59 @@ def plot_max_f1_by_algorithm(results):
     return figure
 
 
+def classification_table(results):
+    """Organiza las métricas de test en el formato comparativo del informe."""
+    available_algorithms = set(results["algoritmo"])
+    algorithms = [
+        algorithm for algorithm in ALGORITHMS if algorithm in available_algorithms
+    ]
+    algorithms.extend(
+        algorithm for algorithm in results["algoritmo"].drop_duplicates()
+        if algorithm not in algorithms
+    )
+    rows = []
+    reduction_order = list(REDUCTIONS)
+    weighting_order = ("TO", "TF-IDF")
+    for weighting in weighting_order:
+        for reduction in reduction_order:
+            subset = results[
+                (results["ponderacion"] == weighting)
+                & (results["reduccion"] == reduction)
+            ]
+            if subset.empty:
+                continue
+            stopwords, stemming = REDUCTION_FLAGS[reduction]
+            row = {
+                "POND": weighting,
+                "STOPWORDS": stopwords,
+                "STEMMING": stemming,
+            }
+            for algorithm in algorithms:
+                values = subset[subset["algoritmo"] == algorithm].iloc[0]
+                row[(algorithm, "PRECISION")] = values["precision_test"]
+                row[(algorithm, "RECALL")] = values["recall_test"]
+                row[(algorithm, "F1-SCORE")] = values["f1_test"]
+            rows.append(row)
+
+    base_columns = ["#", "POND", "STOPWORDS", "STEMMING"]
+    metric_columns = [
+        (algorithm, metric)
+        for algorithm in algorithms
+        for metric in ("PRECISION", "RECALL", "F1-SCORE")
+    ]
+    table = pd.DataFrame(rows)
+    table.insert(0, "#", range(1, len(table) + 1))
+    for column in metric_columns:
+        if column not in table:
+            table[column] = float("nan")
+    table = table[base_columns + metric_columns]
+    table.columns = pd.MultiIndex.from_tuples(
+        [(column, "") if isinstance(column, str) else column
+         for column in table.columns]
+    )
+    return table
+
+
 def plot_mean_f1_by_weighting(results):
     summary = (
         results.groupby(["ponderacion", "algoritmo"], as_index=False)["f1_test"]
@@ -211,12 +271,17 @@ def save_classification_results(results, output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     results.to_csv(output_dir / "classification_results.csv", index=False)
+    formatted = classification_table(results)
+    formatted.to_csv(output_dir / "classification_comparison_table.csv")
     figures = {
         "f1_max_algorithm.png": plot_max_f1_by_algorithm(results),
         "f1_mean_weighting_algorithm.png": plot_mean_f1_by_weighting(results),
         "f1_mean_reduction_algorithm.png": plot_mean_f1_by_reduction(results),
     }
-    paths = {"table": output_dir / "classification_results.csv"}
+    paths = {
+        "table": output_dir / "classification_results.csv",
+        "comparison_table": output_dir / "classification_comparison_table.csv",
+    }
     for filename, figure in figures.items():
         path = output_dir / filename
         figure.savefig(path, dpi=160, bbox_inches="tight")
