@@ -1,6 +1,6 @@
 metodo,topico,palabras
-LDA,Tema 1,"gobierno, catalunya, pp, iniciativa, per, vers, partido, equo, presidente, madrid"
-LDA,Tema 2,"años, personas, ser, puede, pais, gobierno, caso, segun, solo, dice"
-LDA,Tema 3,"pais, gobierno, años, venezuela, eeuu, colombia, nueva, parte, acuerdo, unidos"
-LDA,Tema 4,"ceuta, video, españa, redes, marruecos, sociales, personas, segun, mensajes, migrantes"
-LDA,Tema 5,"gobierno, ley, pp, tribunal, euros, caso, supremo, juez, fiscalia, años"
+LDA,Tema 1,"gobierno, pais, segun, españa, presidente, dijo, paises, ser, años, latina"
+LDA,Tema 2,"gobierno, pp, sanchez, congreso, podemos, ley, psoe, partido, presidente, madrid"
+LDA,Tema 3,"ceuta, video, personas, redes, sociales, marruecos, mensajes, migrantes, embargo, españa"
+LDA,Tema 4,"años, colombia, venezuela, eeuu, pais, personas, noticias, caso, nacional, parte"
+LDA,Tema 5,"catalunya, iniciativa, per, vers, madrid, gobierno, equo, andalucia, canaria, supremo"
