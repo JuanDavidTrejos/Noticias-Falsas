@@ -8,21 +8,46 @@ from __future__ import annotations
 
 import re
 import unicodedata
+import warnings
 
 from bs4 import BeautifulSoup
 
+try:  # bs4 >= 4.11
+    from bs4 import MarkupResemblesLocatorWarning
 
-# URLs completas, dominios con www y enlaces que comienzan por http(s).
+    warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+except ImportError:
+    pass
+
+
+# Dominios (la terminación se compara en minúsculas para no borrar "sí.Es ...").
+_TLDS = r"(?-i:com|co|org|net|edu|es|gob|gov|io|info|tv)"
+
+# URLs (http/www), correos electrónicos y dominios sueltos como newtral.es
 URL_PATTERN = re.compile(
-    r"(?:https?://|www\.)\S+|(?<![@\w])[\w.-]+\.(?:com|co|org|net|edu)(?:/\S*)?",
+    r"(?:https?://|www\.)\S+"
+    r"|[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
+    rf"|(?<![@\w])[\w-]+(?:\.[\w-]+)*\.{_TLDS}\b(?:/\S*)?",
     re.IGNORECASE,
 )
-NUMBER_PATTERN = re.compile(r"\b\d+(?:[.,]\d+)*\b")
+
+# Siglas con puntos: EE.UU. -> EEUU, S.A. -> SA (se aplica antes de pasar a minúsculas)
+ACRONYM_PATTERN = re.compile(r"\b(?:[A-ZÁÉÍÓÚÑ]{1,3}\.){2,}")
+
+# Números enteros/decimales, incluso pegados a letras (covid19), con º ª % opcionales
+NUMBER_PATTERN = re.compile(r"\d+(?:[.,]\d+)*[ºª°%]?")
+
+# Emoticones aislados (no dentro de palabras): :) ;D =( :-P :'( xD <3
 EMOTICON_PATTERN = re.compile(
-    r"(?::|;|=|8)(?:-|'|^)?(?:\)|\(|D|P|p|/|\\|O|\*)+"
+    r"(?<!\S)(?:[:;=][-'^o]?[)(DPp/\\O*]+|[xX][dD]|<3)(?!\w)"
 )
-PUNCTUATION_PATTERN = re.compile(r"[^\w\s]", flags=re.UNICODE)
+
+# Puntuación y símbolos (incluye emojis y guion bajo)
+PUNCTUATION_PATTERN = re.compile(r"[^\w\s]|_", flags=re.UNICODE)
 WHITESPACE_PATTERN = re.compile(r"\s+")
+
+# Marcadores temporales para proteger la ñ al quitar tildes
+_N_LOWER, _N_UPPER = "\ue000", "\ue001"
 
 
 def to_lowercase(text: str) -> str:
@@ -31,18 +56,22 @@ def to_lowercase(text: str) -> str:
 
 
 def remove_accents(text: str) -> str:
-    """Elimina tildes conservando la letra base, por ejemplo á -> a."""
-    normalized = unicodedata.normalize("NFD", str(text))
-    return "".join(
-        character
-        for character in normalized
-        if not unicodedata.combining(character)
-    )
+    """Elimina tildes de las vocales (á->a, ü->u) y CONSERVA la ñ."""
+    text = str(text).replace("ñ", _N_LOWER).replace("Ñ", _N_UPPER)
+    normalized = unicodedata.normalize("NFD", text)
+    stripped = "".join(c for c in normalized if not unicodedata.combining(c))
+    stripped = unicodedata.normalize("NFC", stripped)
+    return stripped.replace(_N_LOWER, "ñ").replace(_N_UPPER, "Ñ")
 
 
 def remove_urls(text: str) -> str:
-    """Elimina URLs, dominios web y rutas asociadas."""
+    """Elimina URLs, correos y dominios web."""
     return URL_PATTERN.sub(" ", str(text))
+
+
+def join_acronyms(text: str) -> str:
+    """Quita los puntos de las siglas: EE.UU. -> EEUU."""
+    return ACRONYM_PATTERN.sub(lambda m: m.group(0).replace(".", ""), str(text))
 
 
 def remove_numbers(text: str) -> str:
@@ -66,7 +95,7 @@ def remove_emoticons(text: str) -> str:
 
 
 def remove_punctuation(text: str) -> str:
-    """Elimina signos de puntuación y conserva letras, números y espacios."""
+    """Elimina signos de puntuación y símbolos; conserva letras, números y espacios."""
     return PUNCTUATION_PATTERN.sub(" ", str(text))
 
 
@@ -88,14 +117,16 @@ def clean_text(
 ) -> str:
     """Aplica el pipeline completo de limpieza solicitado en la rúbrica.
 
-    Los parámetros permiten activar o desactivar pasos para comparar
-    variantes en el notebook sin duplicar código.
+    Orden: HTML -> enlaces -> siglas -> emoticones -> números -> minúsculas
+    -> tildes (conserva ñ) -> puntuación -> saltos de línea y espacios.
     """
     result = str(text)
     if remove_html_:
         result = remove_html(result)
     if remove_urls_:
         result = remove_urls(result)
+    if remove_punctuation_:
+        result = join_acronyms(result)  # antes de borrar los puntos
     if remove_emoticons_:
         result = remove_emoticons(result)
     if remove_numbers_:
