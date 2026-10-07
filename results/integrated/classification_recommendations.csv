@@ -1,0 +1,4 @@
+señal,variables,uso
+Distribución POS,"proporción de NOUN, ADV y PRON",añadir como características numéricas
+Entidades NER,"conteos por LOC, PER, ORG y MISC",añadir frecuencias normalizadas por documento
+Temas,distribución de tópicos LSA/LDA,combinar con TF-IDF para capturar contexto semántico

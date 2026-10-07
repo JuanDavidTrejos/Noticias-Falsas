@@ -171,6 +171,8 @@ def save_pos_results(
     output_dir: Path,
 ) -> dict[str, Path]:
     """Guarda CSV, tabla comparativa y PNG sin mostrar figuras."""
+    import matplotlib.pyplot as plt
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -184,6 +186,7 @@ def save_pos_results(
     comparative_table(pos_counts).to_csv(paths["table"], encoding="utf-8")
     figure = plot_pos_distribution(pos_counts)
     figure.savefig(paths["figure"], dpi=160, bbox_inches="tight")
+    plt.close(figure)
     return paths
 
 
@@ -374,6 +377,8 @@ def save_ner_results(
     top_n: int = 10,
 ) -> dict[str, Path]:
     """Guarda la extracción, resúmenes y gráfico de NER en ``output_dir``."""
+    import matplotlib.pyplot as plt
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     summaries = summarize_entities(entities, top_n=top_n)
@@ -405,12 +410,13 @@ def save_ner_results(
     )
     figure = plot_ner_distribution(entities)
     figure.savefig(paths["figure"], dpi=160, bbox_inches="tight")
-    plot_top_entities(entities, label=1).savefig(
-        paths["figure_true"], dpi=160, bbox_inches="tight"
-    )
-    plot_top_entities(entities, label=0).savefig(
-        paths["figure_false"], dpi=160, bbox_inches="tight"
-    )
+    plt.close(figure)
+    true_figure = plot_top_entities(entities, label=1)
+    true_figure.savefig(paths["figure_true"], dpi=160, bbox_inches="tight")
+    plt.close(true_figure)
+    false_figure = plot_top_entities(entities, label=0)
+    false_figure.savefig(paths["figure_false"], dpi=160, bbox_inches="tight")
+    plt.close(false_figure)
     return paths
 
 

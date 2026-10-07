@@ -1,8 +1,6 @@
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 
 def get_dominant_topic(doc_topic_matrix, topic_labels=None):
@@ -76,23 +74,36 @@ def plot_topic_comparison(topic_table, title="Distribución Porcentual de Temas 
                       var_name="Clase", value_name="Porcentaje")
     df_plot["Clase"] = df_plot["Clase"].str.replace(" (%)", "", regex=False)
 
-    sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(data=df_plot, x="Tema", y="Porcentaje", hue="Clase",
-                palette={"Verdaderas": "#27ae60", "Falsas": "#c0392b"},
-                edgecolor="black", linewidth=0.8, ax=ax)
+    temas = list(df_plot["Tema"].unique())
+    x = np.arange(len(temas))
+    width = 0.38
+    for offset, clase, color in (
+        (-width / 2, "Verdaderas", "#27ae60"),
+        (width / 2, "Falsas", "#c0392b"),
+    ):
+        values = [
+            df_plot.loc[
+                (df_plot["Tema"] == tema) & (df_plot["Clase"] == clase),
+                "Porcentaje",
+            ].iloc[0]
+            for tema in temas
+        ]
+        bars = ax.bar(
+            x + offset,
+            values,
+            width,
+            label=clase,
+            color=color,
+            edgecolor="black",
+            linewidth=0.8,
+        )
+        ax.bar_label(bars, fmt="%.1f%%", padding=3, fontsize=9)
 
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.set_xlabel("Tema Dominante", fontsize=11, fontweight="bold")
     ax.set_ylabel("Proporción en la clase (%)", fontsize=11, fontweight="bold")
-    plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+    ax.set_xticks(x, temas, rotation=30, ha="right")
     ax.legend(title="Veracidad de Noticia", frameon=True)
-
-    for p in ax.patches:
-        h = p.get_height()
-        if h > 0:
-            ax.annotate(f"{h:.1f}%", (p.get_x() + p.get_width() / 2.0, h),
-                        ha="center", va="bottom", fontsize=9,
-                        xytext=(0, 3), textcoords="offset points")
     fig.tight_layout()
-    return fig  
+    return fig

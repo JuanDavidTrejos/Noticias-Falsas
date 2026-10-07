@@ -347,7 +347,114 @@ la calidad del scraping y la ausencia de una anotación humana de referencia.
 
 ---
 
-## 5. Conclusiones parciales
+## 4. Análisis de temas según la veracidad de las noticias
+
+Para estudiar si los temas predominantes se distribuyen de manera diferente
+entre noticias verdaderas y falsas, se asignó a cada documento el tema
+dominante obtenido mediante LDA. La distribución se calculó por separado para
+cada clase, usando como denominador el total de documentos verdaderos o falsos
+respectivamente. También se aplicó una prueba de chi-cuadrado sobre las
+frecuencias de los temas para evaluar si la asociación entre tema y veracidad
+podía considerarse relevante.
+
+El notebook genera la tabla con cantidades y porcentajes, las palabras
+representativas y una interpretación de cada tema. Asimismo, guarda el gráfico
+comparativo en `results/topics_comparison.png`.
+
+**[Insertar aquí la tabla de distribución de temas por veracidad y el gráfico
+comparativo generado en el notebook.]**
+
+Cuando Gensim no está disponible, por ejemplo por incompatibilidad con Python
+3.14, el flujo utiliza LDA de scikit-learn como respaldo. Esta alternativa
+mantiene la estructura del análisis y permite reproducir el notebook sin
+modificar el corpus original.
+
+---
+
+## 5. Análisis integrado del corpus
+
+El análisis integrado combina las distribuciones POS, las entidades nombradas
+y los temas obtenidos mediante LSA y LDA. El objetivo no es afirmar que una
+sola señal determine si una noticia es falsa, sino identificar patrones que
+puedan aportar información adicional a un sistema automático.
+
+### 5.1. Patrón 1: categorías gramaticales
+
+Los sustantivos son la categoría dominante en ambas clases. Su proporción es
+mayor en las noticias falsas (47,31%) que en las verdaderas (45,08%). En
+contraste, las noticias verdaderas presentan mayores proporciones de
+pronombres (10,31% frente a 8,78%) y adverbios (7,08% frente a 6,09%).
+Verbos y adjetivos son muy similares entre ambas categorías.
+
+Este patrón puede reflejar diferencias de estilo: las noticias falsas del
+corpus pueden concentrarse más en nombres de actores, lugares y conceptos,
+mientras que las verdaderas emplean relativamente más recursos pronominales y
+adverbiales. No obstante, la diferencia también puede estar influenciada por
+la longitud y la fuente de los textos.
+
+**[Insertar aquí la tabla de diferencias POS y, opcionalmente, un gráfico
+resumen de las proporciones.]**
+
+### 5.2. Patrón 2: tipos de entidades nombradas
+
+Los lugares (`LOC`) son el tipo de entidad más frecuente en ambas clases:
+33,15% en noticias verdaderas y 31,57% en falsas. Las verdaderas también
+presentan una mayor proporción de entidades misceláneas (`MISC`), con 25,15%
+frente a 23,51%. Las falsas presentan una mayor proporción de organizaciones
+(`ORG`), con 19,76% frente a 16,67%. La proporción de personas (`PER`) es
+prácticamente igual.
+
+Este resultado sugiere que la distribución de actores y lugares puede aportar
+información útil, especialmente si se normalizan los conteos por documento o
+por número de tokens. Sin embargo, debe controlarse el efecto de la fuente,
+porque el dataset y las noticias obtenidas por scraping no necesariamente
+tratan los mismos temas.
+
+**[Insertar aquí la tabla comparativa de tipos NER y el gráfico de
+distribución porcentual.]**
+
+### 5.3. Patrón 3: entidades recurrentes y temas predominantes
+
+Las entidades más frecuentes reflejan un fuerte componente político y
+territorial. En las noticias verdaderas destacan entidades como `PP`,
+`Gobierno`, `PSOE`, `Venezuela`, `EE.UU.`, `Vox` y `Congreso`. En las falsas
+aparecen con alta frecuencia `Ceuta`, `Gobierno`, `Iniciativa vers per
+Catalunya`, `España`, `PP`, `BNG`, `Cristina Narbona`, `Congreso` y
+`Marruecos`.
+
+Los modelos LSA y LDA refuerzan esta observación. Entre los términos
+predominantes aparecen gobierno, partidos, Congreso, Cataluña, Canarias,
+procesos electorales, tribunales y acontecimientos internacionales. Por lo
+tanto, las diferencias observadas no son únicamente gramaticales: también
+están relacionadas con los actores, lugares y conflictos políticos que
+organizan el contenido del corpus.
+
+**[Insertar aquí las tablas de tópicos LSA/LDA y los listados top-20 de
+entidades por clase.]**
+
+### 5.4. Utilidad para un sistema automático
+
+Los patrones identificados pueden utilizarse como información adicional para
+mejorar un detector de noticias falsas:
+
+| Señal | Variables sugeridas | Integración |
+|---|---|---|
+| POS | Proporciones de `NOUN`, `ADV` y `PRON` | Características numéricas |
+| NER | Conteos de `LOC`, `PER`, `ORG` y `MISC` normalizados por documento | Características numéricas |
+| Temas | Distribución de tópicos LSA/LDA | Combinar con TF-IDF |
+| Entidades específicas | Frecuencia de entidades recurrentes | Variables léxicas o indicadores |
+
+Estas variables no deben utilizarse como reglas deterministas. La evaluación
+debe realizarse mediante validación cruzada y, cuando sea posible, separando
+documentos por fuente. De lo contrario, el clasificador podría aprender
+rasgos propios de Newtral, BBC Mundo o del dataset en lugar de aprender
+características de falsedad.
+
+**[Insertar aquí la tabla de variables propuestas para el sistema automático.]**
+
+---
+
+## 6. Conclusiones parciales
 
 El corpus construido cumple con el balance requerido entre noticias falsas y
 verdaderas y conserva la trazabilidad de cada documento mediante
@@ -372,3 +479,52 @@ NER. Los falsos positivos y las confusiones entre categorías muestran que las
 frecuencias extraídas deben complementarse con una inspección cualitativa de
 los ejemplos del corpus.
 
+El análisis integrado indica que la combinación de señales gramaticales,
+entidades y temas es más informativa que cualquiera de ellas por separado.
+Estas señales deben incorporarse de forma controlada y evaluarse con
+validación cruzada para comprobar si realmente mejoran la detección automática
+de noticias falsas.
+
+---
+
+## 10. Técnicas de aprendizaje utilizadas
+
+Para la clasificación binaria se compararon cuatro algoritmos:
+
+- Regresión logística.
+- Árbol de decisión.
+- K vecinos más cercanos (KNN).
+- Máquina de vectores de soporte (SVM lineal).
+
+Cada algoritmo se ejecutó en ocho configuraciones: cuatro alternativas de
+reducción y normalización (`Ninguna`, `Solo stopwords`, `Solo stemming` y
+`Stopwords + stemming`) combinadas con dos esquemas de ponderación:
+frecuencia absoluta o TO y TF-IDF. En total se evaluaron 32 configuraciones.
+No se realizó búsqueda de hiperparámetros; se utilizaron configuraciones base
+para comparar el efecto de las representaciones solicitadas.
+
+El corpus se dividió de forma estratificada en 80% para entrenamiento y 20%
+para test. Sobre el conjunto de entrenamiento se aplicó validación cruzada
+estratificada de 10 pliegues. El vectorizador se ajustó solamente con los
+datos de entrenamiento para evitar fuga de información hacia el test. Para
+cada configuración se calcularon Accuracy, Precisión, Recall y F1-score
+ponderado, tanto en validación cruzada como en el conjunto de test.
+
+El notebook genera una tabla con una fila por configuración y tres figuras:
+
+1. F1-score máximo por algoritmo.
+2. F1-score medio por ponderación y algoritmo.
+3. F1-score medio por técnica de reducción y algoritmo.
+
+**[Insertar aquí la tabla completa de las 32 configuraciones.]**
+
+**[Insertar aquí las tres gráficas comparativas generadas en
+`results/classification/`.]**
+
+La interpretación debe priorizar el F1 ponderado medio de la validación
+cruzada y contrastarlo con el resultado del test. Un valor máximo aislado no
+debe considerarse suficiente para elegir un modelo, especialmente si existe
+una diferencia importante frente al promedio de los pliegues. Asimismo, las
+comparaciones pueden estar afectadas por las fuentes y temas del corpus, por
+lo que los resultados describen el conjunto construido y no necesariamente
+se generalizan a cualquier noticia en español.

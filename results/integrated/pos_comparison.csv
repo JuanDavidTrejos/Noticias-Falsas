@@ -1,0 +1,6 @@
+POS,Verdaderas (%),Falsas (%),diferencia_falsas_menos_verdaderas
+NOUN,45.08,47.31,2.23
+VERB,22.59,22.76,0.17
+ADJ,14.95,15.06,0.11
+ADV,7.08,6.09,-0.99
+PRON,10.31,8.78,-1.53
